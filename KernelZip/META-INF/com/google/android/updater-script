@@ -1,0 +1,74 @@
+assert(getprop("ro.product.device") == "golden" || getprop("ro.build.product") == "golden" ||
+       getprop("ro.product.device") == "i8190" || getprop("ro.build.product") == "i8190" ||
+       getprop("ro.product.device") == "GT-I8190" || getprop("ro.build.product") == "GT-I8190");
+ui_print("");
+ui_print("");
+ui_print("-----------------------------------------------------------------");
+ui_print("              FTL-Kernel for golden i8190 ");
+ui_print("-----------------------------------------------------------------");
+ui_print("");
+ui_print("                  Installer based on AGNi ANYROM INSTALLER");
+ui_print("");
+ui_print("");
+set_progress(0.1);
+########################Mounting System and general Setup########################
+ui_print(" Mounting Partitions...");
+run_program("/sbin/busybox", "mount", "/system") || ui_print("   /system is mounted already");
+set_progress(0.2);
+ui_print(" Extracting and preparing tools...");
+package_extract_dir("tools", "/tmp");
+set_progress(0.3);
+set_perm(0, 0, 0777, "/tmp/builder.sh");
+set_perm(0, 0, 0777, "/tmp/cleanup.sh");
+set_perm_recursive(0, 2000, 0777, 0777, "/tmp/packing/sbin/busybox");
+########################KERNEL##################################################
+set_progress(0.4);
+if
+file_getprop("/tmp/aroma-data/kernel.prop","selected") == "1"
+then
+ui_print("");
+ui_print(" Patching existing flashed kernel... ");
+run_program("/tmp/packing/sbin/busybox", "sh", "/tmp/builder.sh");
+set_progress(0.5);
+ui_print(" Patched existing flashed kernel ! ");
+ui_print(" Extracting Required /system Files... ");
+package_extract_dir("system", "/system");
+set_progress(0.6);
+ui_print(" Setting Permissions... ");
+set_perm_recursive(0, 2000, 0755, 0755, "/system/bin");
+set_perm_recursive(0, 2000, 0755, 0755, "/system/framework");
+set_perm_recursive(0, 0, 0755, 0644, "/system/lib");
+set_perm_recursive(0, 0, 0755, 0644, "/system/lib/modules");
+
+set_perm(0, 0, 0755, "/system/lib/drm");
+set_perm(0, 0, 0755, "/system/lib/egl");
+set_perm(0, 0, 0755, "/system/lib/soundfx");
+
+set_progress(0.7);
+unmount("/system");
+ui_print(" Partitions unmounted ! ");
+ui_print("");
+ui_print(" Flashing patched boot.img...");
+set_progress(0.8);
+assert(write_raw_image("/tmp/boot.img", "/dev/block/mmcblk0p20"),
+set_progress(0.9);
+delete("/tmp/boot.img"));
+ui_print(" Flashed ! ");
+endif;
+
+if
+file_getprop("/tmp/aroma-data/kernel.prop","selected") == "2"
+then
+ui_print("");
+ui_print("Skipping installation...");
+ui_print("");
+set_progress(0.9);
+endif;
+########################CLEANUP##################################################
+run_program("/sbin/busybox", "sh", "/tmp/cleanup.sh");
+delete("/tmp/cleanup.sh");
+ui_print("  A logfile has been placed at ");
+ui_print("    /data/.ANYROM for your reference. ");
+ui_print("");
+ui_print("  * Enjoy *");
+set_progress(1.0);

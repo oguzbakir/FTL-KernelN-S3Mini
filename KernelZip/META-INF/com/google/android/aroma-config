@@ -1,0 +1,124 @@
+﻿### LICENSE:
+#
+# Copyright (C) 2011 Ahmad Amarullah ( http://amarullz.com/ )
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or #implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+### FILE INFO:
+#
+# AROMA Installer 2.70 - AROMA Installer Test Script Configuration
+#       (c) 2011-2012 by Ahmad Amarullah
+#           amarullz - xda-developers
+#           http://www.amarullz.com/
+#
+#       Binary Version  : 2.70B
+#       Binary Codename : Flamboyan
+##
+####################################################
+# Initializing Rom Information
+ini_set("rom_name",             "Ftl-Kernel ");
+ini_set("rom_version",          "for golden lineage-15.0");
+ini_set("rom_author",           "oguzbakir(oguz298@xda)");
+ini_set("rom_device",           "Samsung S3 mini (i8190) aka. golden");
+ini_set("rom_date",             "18/12/2017");
+fontresload( "0", "ttf/Roboto-Regular.ttf", "10" );
+fontresload( "1", "ttf/Roboto-Regular.ttf", "12" ); 
+ini_set("transition","stack");
+theme("ics");
+####################################################
+
+# Show Logo while starting
+splash(
+    3000,
+    "i8190_aproved"
+);
+
+viewbox(
+  "Welcome",
+  "\n\n\n\n\n"+
+  "You're about to flash:\n"+
+  ini_get("rom_name") + " for " + ini_get("rom_device") +  "\n\n\n"+
+  "  Version:  <#FF0000>" + ini_get("rom_version") + "</#>\n"+
+  "  Updated:  <#FF0000>" + ini_get("rom_date") + "</#>\n\n\n"+
+  "  This is your device (device discovered):<b><#selectbg_g> "+sysprop("ro.product.model")+"</#></b>\n\n\n"+  
+  "Press <b>Next</b> to continue...",
+  "icons/welcome"
+);
+
+agreebox(
+  "Terms Of Use",
+  "F_kernel Installer Terms Of Use:",
+  "icons/agreement",
+  readfile_aroma("agreement.txt"),
+  "I agree with these terms of use",
+  "Please check the agreement to continue..."
+);
+
+menubox(
+  "Install a custom Kernel or run a tool",
+  "Please select:",
+  "icons/install",
+  "kernel.prop",
+  
+  "Install kernel","3.0.31","icons/install",
+  
+  "Skip","I don't want try this feature","icons/skip"
+);
+
+pleasewait("Configure...");
+
+#
+setvar("retstatus",
+  install(
+	#-- Title
+      "Installing",
+	
+	#-- Installation Process message
+	  "<b>"+ini_get("rom_name")+"</b> are being installed.\n\n"+
+      "Please wait while installation wizard installs <b>"+ini_get("rom_name")+
+	  "</b>. This may take several minutes.",
+	
+	#-- Installation Icon
+      "@install",
+	
+	#-- Installation Finish Message
+      "The installation wizard has successfully installed <b>"+ini_get("rom_name")+
+	  "</b>. Press Next to continue."
+  )
+);
+
+ini_set("text_next", "Finish");
+ini_set("icon_next", "@finish");
+
+checkviewbox(
+    "Installation Completed",
+  
+    "<#selectbg_g><b>Congratulation...</b></#>\n\n"+
+    "<b>"+ini_get("rom_name")+"</b> has been installed into your device.\n\n"+
+    "Installer Status: "+getvar("retstatus")+"\n\n",
+	
+    "@welcome",
+
+    "Reboot your device now.",
+
+    "0",
+
+    "reboot_it"
+);
+
+if
+  getvar("reboot_it")=="1"
+then
+  reboot("onfinish");
+endif;
+

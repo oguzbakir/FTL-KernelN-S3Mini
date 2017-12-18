@@ -1,0 +1,17 @@
+<@center><b><#selectbg_g>Terms of Use</#></b></@>
+
+<b>Agreement</b>
+<b>By using this GOLDENKERNEL-Installer, you will accept:</b>
+
+<b><*>DON'T USE THIS TOOL ON OTHER DEVICES! THIS MEIGHT BRICK YOUR DEVICE!</*>
+
+<*>Time is time, don't waste your time to post dumb ass question (sorry but its true)</*>
+<*>Everything is not free SO DON'T ACT LIKE YOU PAID FOR IT</*>
+
+<*>I HAVE READ THE ENTIRE OP WITH ALL THE NECESSARY INFO ON HOW TO MAKE THIS WORK FOR MY DEVICE</*>
+<*>I WILL NOT HOLD ANY OF THE DEVELOPER RESPONSIBLE FOR ANYTHING THAT MAY HAPPEN TO MY TABLET/PHONE</*>
+<*>I AM CHOOSING TO MAKE THESE MODIFICATIONS ON MY OWN RISK</*></b>
+
+<#selectbg_g>The kernel and scripts in this belongs to the rightful owners</#>
+
+<b>By using this you agree with above terms!</b>
