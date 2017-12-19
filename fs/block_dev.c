@@ -72,6 +72,19 @@ static void bdev_inode_switch_bdi(struct inode *inode,
 		bdi_wakeup_thread_delayed(dst);
 }
 
+sector_t blkdev_max_block(struct block_device *bdev)
+{
+	sector_t retval = ~((sector_t)0);
+	loff_t sz = i_size_read(bdev->bd_inode);
+
+	if (sz) {
+		unsigned int size = block_size(bdev);
+		unsigned int sizebits = blksize_bits(size);
+		retval = (sz >> sizebits);
+	}
+	return retval;
+}
+
 static sector_t max_block(struct block_device *bdev)
 {
 	sector_t retval = ~((sector_t)0);
