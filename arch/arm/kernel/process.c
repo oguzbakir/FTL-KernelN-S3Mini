@@ -325,6 +325,8 @@ void machine_restart(char *cmd)
 		reboot_mode = cmd[0];
 
 	printk( "machine_restart: reboot_mode: %c\n", reboot_mode );
+#elif CONFIG_SAMSUNG_KERNEL_DEBUG
+void machine_restart(unsigned int char *cmd)
 	printk( "machine_restart: arm_pm_restart: 0x%x\n", arm_pm_restart ) ;
 #endif /* CONFIG_SAMSUNG_KERNEL_DEBUG */
 

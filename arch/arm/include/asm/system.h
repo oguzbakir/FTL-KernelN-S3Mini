@@ -62,13 +62,6 @@
 
 #include <asm/outercache.h>
 
-#define __exception	__attribute__((section(".exception.text")))
-#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-#define __exception_irq_entry	__irq_entry
-#else
-#define __exception_irq_entry	__exception
-#endif
-
 struct thread_info;
 struct task_struct;
 
@@ -85,6 +78,14 @@ void die(const char *msg, struct pt_regs *regs, int err);
 struct siginfo;
 void arm_notify_die(const char *str, struct pt_regs *regs, struct siginfo *info,
 		unsigned long err, unsigned long trap);
+
+#ifdef CONFIG_ARM_LPAE
+#define FAULT_CODE_ALIGNMENT	33
+#define FAULT_CODE_DEBUG	34
+#else
+#define FAULT_CODE_ALIGNMENT	1
+#define FAULT_CODE_DEBUG	2
+#endif
 
 void hook_fault_code(int nr, int (*fn)(unsigned long, unsigned int,
 				       struct pt_regs *),

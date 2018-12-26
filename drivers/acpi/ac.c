@@ -142,6 +142,9 @@ static int get_ac_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_ONLINE:
 		val->intval = ac->state;
 		break;
+	case POWER_SUPPLY_PROP_SCOPE:
+		val->intval = POWER_SUPPLY_SCOPE_SYSTEM;
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -150,6 +153,7 @@ static int get_ac_property(struct power_supply *psy,
 
 static enum power_supply_property ac_props[] = {
 	POWER_SUPPLY_PROP_ONLINE,
+	POWER_SUPPLY_PROP_SCOPE,
 };
 
 #ifdef CONFIG_ACPI_PROCFS_POWER

@@ -25,7 +25,7 @@
 #include <linux/earlysuspend.h>
 #endif
 #include <linux/sensors_core.h>
-#include <linux/err.h>
+
 
 #define I2C_RETRY_DELAY  5
 #define I2C_RETRIES      5

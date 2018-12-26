@@ -733,6 +733,7 @@ static void tcp_v4_send_ack(struct sk_buff *skb, u32 seq, u32 ack,
 	arg.csumoffset = offsetof(struct tcphdr, check) / 2;
 	if (oif)
 		arg.bound_dev_if = oif;
+
 	arg.tos = tos;
 	ip_send_reply(net->ipv4.tcp_sock, skb, ip_hdr(skb)->saddr,
 		      &arg, arg.iov[0].iov_len);

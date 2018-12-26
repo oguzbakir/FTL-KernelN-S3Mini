@@ -915,14 +915,14 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
 		NLA_PUT_STRING(skb, IFLA_IFALIAS, dev->ifalias);
 
 	if (1) {
-		struct rtnl_link_ifmap map = {
-			.mem_start   = dev->mem_start,
-			.mem_end     = dev->mem_end,
-			.base_addr   = dev->base_addr,
-			.irq         = dev->irq,
-			.dma         = dev->dma,
-			.port        = dev->if_port,
-		};
+		struct rtnl_link_ifmap map;
+		memset(&map, 0, sizeof(map));
+		map.mem_start   = dev->mem_start;
+		map.mem_end     = dev->mem_end;
+		map.base_addr   = dev->base_addr;
+		map.irq         = dev->irq;
+		map.dma         = dev->dma;
+		map.port        = dev->if_port;
 		NLA_PUT(skb, IFLA_MAP, sizeof(map), &map);
 	}
 
@@ -1976,7 +1976,7 @@ static int rtnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 	sz_idx = type>>2;
 	kind = type&3;
 
-	if (kind != 2 && security_netlink_recv(skb, CAP_NET_ADMIN))
+	if (kind != 2 && !capable(CAP_NET_ADMIN))
 		return -EPERM;
 
 	if (kind == 2 && nlh->nlmsg_flags&NLM_F_DUMP) {

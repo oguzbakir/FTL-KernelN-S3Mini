@@ -104,6 +104,7 @@ obj-$(CONFIG_CG2900)		+= board-ux500-cg2900.o
 ifeq ($(CONFIG_UX500_SOC_DB8500), y)
 obj-$(CONFIG_STM_TRACE)			+= board-mop500-stm.o
 endif
+obj-$(CONFIG_SWITCH)			+= android_switch.o
 obj-$(CONFIG_INPUT_AB8505_MICRO_USB_DETECT)	+= ssg_micro_usb_iddet.o abx_micro_usb_iddet.o
 ifneq ($(CONFIG_SAMSUNG_JACK), y)
 endif

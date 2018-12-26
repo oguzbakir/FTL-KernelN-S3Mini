@@ -1640,4 +1640,4 @@ struct zzmoove_profile zzmoove_profiles[] = {
 		0		// up_threshold_sleep
 #endif
 	}
-}; 
+};

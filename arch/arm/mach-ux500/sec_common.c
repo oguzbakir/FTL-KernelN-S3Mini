@@ -168,9 +168,14 @@ static unsigned int sec_checksum_done;
 
 static int sec_cpufreq_notifier(struct notifier_block *,
 					unsigned long, void *);
+static int sec_policy_notifier(struct notifier_block *,
+					unsigned long, void *);
 
 static struct notifier_block sec_cpufreq_notifier_block = {
 	.notifier_call = sec_cpufreq_notifier,
+};
+static struct notifier_block sec_policy_notifier_block = {
+	.notifier_call = sec_policy_notifier,
 };
 
 static DEFINE_SPINLOCK(sec_cpufreq_log_lock);
@@ -814,6 +819,16 @@ static int sec_cpufreq_notifier(struct notifier_block *nb,
 
 	return 0;
 }
+static int sec_policy_notifier(struct notifier_block *nb,
+					unsigned long val, void *data)
+{
+	struct cpufreq_policy *policy = data;
+
+	if (val == CPUFREQ_NOTIFY)
+		printk(KERN_INFO "DVFS Governor Policy set to - %s\n", policy->governor->name);
+
+	return 0;
+}
 #endif
 
 int __init sec_common_init_post(void)
@@ -828,6 +843,7 @@ int __init sec_common_init_post(void)
 		printk(KERN_WARNING "%s: input_register_handler() failed (%d) ", __func__, retval);
 
 	cpufreq_register_notifier(&sec_cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
+	cpufreq_register_notifier(&sec_policy_notifier_block, CPUFREQ_POLICY_NOTIFIER);
 #endif
 	return 0;
 }		/* end fn sec_common_init_post */

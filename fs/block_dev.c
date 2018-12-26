@@ -85,19 +85,6 @@ sector_t blkdev_max_block(struct block_device *bdev)
 	return retval;
 }
 
-static sector_t max_block(struct block_device *bdev)
-{
-	sector_t retval = ~((sector_t)0);
-	loff_t sz = i_size_read(bdev->bd_inode);
-
-	if (sz) {
-		unsigned int size = block_size(bdev);
-		unsigned int sizebits = blksize_bits(size);
-		retval = (sz >> sizebits);
-	}
-	return retval;
-}
-
 /* Kill _all_ buffers and pagecache , dirty or not.. */
 static void kill_bdev(struct block_device *bdev)
 {
@@ -156,7 +143,7 @@ static int
 blkdev_get_block(struct inode *inode, sector_t iblock,
 		struct buffer_head *bh, int create)
 {
-	if (iblock >= max_block(I_BDEV(inode))) {
+	if (iblock >= blkdev_max_block(I_BDEV(inode))) {
 		if (create)
 			return -EIO;
 
@@ -178,7 +165,7 @@ static int
 blkdev_get_blocks(struct inode *inode, sector_t iblock,
 		struct buffer_head *bh, int create)
 {
-	sector_t end_block = max_block(I_BDEV(inode));
+	sector_t end_block = blkdev_max_block(I_BDEV(inode));
 	unsigned long max_blocks = bh->b_size >> inode->i_blkbits;
 
 	if ((iblock + max_blocks) > end_block) {

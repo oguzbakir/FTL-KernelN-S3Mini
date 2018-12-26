@@ -2060,6 +2060,7 @@ static int process_isoc_td(struct xhci_hcd *xhci, struct xhci_td *td,
 		break;
 	case COMP_DEV_ERR:
 	case COMP_STALL:
+	case COMP_TX_ERR:
 		frame->status = -EPROTO;
 		skip_td = true;
 		break;
@@ -2150,6 +2151,8 @@ static int process_bulk_intr_td(struct xhci_hcd *xhci, struct xhci_td *td,
 				*status = -EREMOTEIO;
 			else
 				*status = 0;
+			if ((xhci->quirks & XHCI_TRUST_TX_LENGTH))
+				trb_comp_code = COMP_SHORT_TX;
 		} else {
 			*status = 0;
 		}

@@ -196,7 +196,6 @@ static struct ipv6_devconf ipv6_devconf __read_mostly = {
 	.accept_source_route	= 0,	/* we do not accept RH0 by default. */
 	.disable_ipv6		= 0,
 	.accept_dad		= 1,
-	.rp_filter		= 0,
 };
 
 static struct ipv6_devconf ipv6_devconf_dflt __read_mostly = {
@@ -231,7 +230,6 @@ static struct ipv6_devconf ipv6_devconf_dflt __read_mostly = {
 	.accept_source_route	= 0,	/* we do not accept RH0 by default. */
 	.disable_ipv6		= 0,
 	.accept_dad		= 1,
-	.rp_filter		= 0,
 };
 
 /* IPv6 Wildcard Address and Loopback Address defined by RFC2553 */
@@ -914,10 +912,12 @@ retry:
 	if (ifp->flags & IFA_F_OPTIMISTIC)
 		addr_flags |= IFA_F_OPTIMISTIC;
 
-	ift = ipv6_add_addr(idev, &addr, tmp_plen,
-			    ipv6_addr_type(&addr)&IPV6_ADDR_SCOPE_MASK,
-			    addr_flags);
-	if (IS_ERR(ift)) {
+	ift = !max_addresses ||
+	      ipv6_count_addresses(idev) < max_addresses ?
+		ipv6_add_addr(idev, &addr, tmp_plen,
+			      ipv6_addr_type(&addr)&IPV6_ADDR_SCOPE_MASK,
+			      addr_flags) : NULL;
+	if (!ift || IS_ERR(ift)) {
 		in6_ifa_put(ifp);
 		in6_dev_put(idev);
 		printk(KERN_INFO
@@ -3874,7 +3874,6 @@ static inline void ipv6_store_devconf(struct ipv6_devconf *cnf,
 	array[DEVCONF_DISABLE_IPV6] = cnf->disable_ipv6;
 	array[DEVCONF_ACCEPT_DAD] = cnf->accept_dad;
 	array[DEVCONF_FORCE_TLLAO] = cnf->force_tllao;
-	array[DEVCONF_RP_FILTER] = cnf->rp_filter;
 }
 
 static inline size_t inet6_ifla6_size(void)
@@ -4524,13 +4523,6 @@ static struct addrconf_sysctl_table
 		{
 			.procname       = "force_tllao",
 			.data           = &ipv6_devconf.force_tllao,
-			.maxlen         = sizeof(int),
-			.mode           = 0644,
-			.proc_handler   = proc_dointvec
-		},
-		{
-			.procname       = "rp_filter",
-			.data           = &ipv6_devconf.rp_filter,
 			.maxlen         = sizeof(int),
 			.mode           = 0644,
 			.proc_handler   = proc_dointvec

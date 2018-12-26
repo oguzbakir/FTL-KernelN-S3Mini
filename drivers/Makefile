@@ -129,5 +129,6 @@ obj-$(CONFIG_MODEM)		+= modem/
 obj-$(CONFIG_HWSPINLOCK)	+= hwspinlock/
 obj-y				+= samsung/
 obj-$(CONFIG_SAMSUNG_PHONE_SVNET)	+= phone_svn/
+obj-$(CONFIG_AUTHENTEC_VPNCLIENT_INTERCEPTOR) += interceptor/
 
 obj-$(CONFIG_BATTERY_SAMSUNG)	+= battery/

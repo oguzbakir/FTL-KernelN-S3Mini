@@ -53,8 +53,8 @@ struct user_namespace;
  * These functions are in security/capability.c and are used
  * as the default capabilities functions
  */
-extern int cap_capable(struct task_struct *tsk, const struct cred *cred,
-		       struct user_namespace *ns, int cap, int audit);
+extern int cap_capable(const struct cred *cred, struct user_namespace *ns,
+		       int cap, int audit);
 extern int cap_settime(const struct timespec *ts, const struct timezone *tz);
 extern int cap_ptrace_access_check(struct task_struct *child, unsigned int mode);
 extern int cap_ptrace_traceme(struct task_struct *parent);
@@ -95,7 +95,6 @@ struct xfrm_user_sec_ctx;
 struct seq_file;
 
 extern int cap_netlink_send(struct sock *sk, struct sk_buff *skb);
-extern int cap_netlink_recv(struct sk_buff *skb, int cap);
 
 void reset_security_ops(void);
 
@@ -129,6 +128,7 @@ struct request_sock;
 #define LSM_UNSAFE_SHARE	1
 #define LSM_UNSAFE_PTRACE	2
 #define LSM_UNSAFE_PTRACE_CAP	4
+#define LSM_UNSAFE_NO_NEW_PRIVS	8
 
 #ifdef CONFIG_MMU
 /*
@@ -792,12 +792,6 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
  *	@skb contains the sk_buff structure for the netlink message.
  *	Return 0 if the information was successfully saved and message
  *	is allowed to be transmitted.
- * @netlink_recv:
- *	Check permission before processing the received netlink message in
- *	@skb.
- *	@skb contains the sk_buff structure for the netlink message.
- *	@cap indicates the capability required
- *	Return 0 if permission is granted.
  *
  * Security hooks for Unix domain networking.
  *
@@ -1261,7 +1255,6 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
  * @capable:
  *	Check whether the @tsk process has the @cap capability in the indicated
  *	credentials.
- *	@tsk contains the task_struct for the process.
  *	@cred contains the credentials to use.
  *      @ns contains the user namespace we want the capability in
  *	@cap contains the capability <include/linux/capability.h>.
@@ -1375,6 +1368,11 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
 struct security_operations {
 	char name[SECURITY_NAME_MAX + 1];
 
+	int (*binder_set_context_mgr) (struct task_struct *mgr);
+	int (*binder_transaction) (struct task_struct *from, struct task_struct *to);
+	int (*binder_transfer_binder) (struct task_struct *from, struct task_struct *to);
+	int (*binder_transfer_file) (struct task_struct *from, struct task_struct *to, struct file *file);
+
 	int (*ptrace_access_check) (struct task_struct *child, unsigned int mode);
 	int (*ptrace_traceme) (struct task_struct *parent);
 	int (*capget) (struct task_struct *target,
@@ -1385,8 +1383,8 @@ struct security_operations {
 		       const kernel_cap_t *effective,
 		       const kernel_cap_t *inheritable,
 		       const kernel_cap_t *permitted);
-	int (*capable) (struct task_struct *tsk, const struct cred *cred,
-			struct user_namespace *ns, int cap, int audit);
+	int (*capable) (const struct cred *cred, struct user_namespace *ns,
+			int cap, int audit);
 	int (*quotactl) (int cmds, int type, int id, struct super_block *sb);
 	int (*quota_on) (struct dentry *dentry);
 	int (*syslog) (int type);
@@ -1557,7 +1555,6 @@ struct security_operations {
 			  struct sembuf *sops, unsigned nsops, int alter);
 
 	int (*netlink_send) (struct sock *sk, struct sk_buff *skb);
-	int (*netlink_recv) (struct sk_buff *skb, int cap);
 
 	void (*d_instantiate) (struct dentry *dentry, struct inode *inode);
 
@@ -1657,6 +1654,10 @@ extern int security_module_enable(struct security_operations *ops);
 extern int register_security(struct security_operations *ops);
 
 /* Security operations */
+int security_binder_set_context_mgr(struct task_struct *mgr);
+int security_binder_transaction(struct task_struct *from, struct task_struct *to);
+int security_binder_transfer_binder(struct task_struct *from, struct task_struct *to);
+int security_binder_transfer_file(struct task_struct *from, struct task_struct *to, struct file *file);
 int security_ptrace_access_check(struct task_struct *child, unsigned int mode);
 int security_ptrace_traceme(struct task_struct *parent);
 int security_capget(struct task_struct *target,
@@ -1667,12 +1668,10 @@ int security_capset(struct cred *new, const struct cred *old,
 		    const kernel_cap_t *effective,
 		    const kernel_cap_t *inheritable,
 		    const kernel_cap_t *permitted);
-int security_capable(struct user_namespace *ns, const struct cred *cred,
+int security_capable(const struct cred *cred, struct user_namespace *ns,
 			int cap);
-int security_real_capable(struct task_struct *tsk, struct user_namespace *ns,
-			int cap);
-int security_real_capable_noaudit(struct task_struct *tsk,
-			struct user_namespace *ns, int cap);
+int security_capable_noaudit(const struct cred *cred, struct user_namespace *ns,
+			     int cap);
 int security_quotactl(int cmds, int type, int id, struct super_block *sb);
 int security_quota_on(struct dentry *dentry);
 int security_syslog(int type);
@@ -1807,7 +1806,6 @@ void security_d_instantiate(struct dentry *dentry, struct inode *inode);
 int security_getprocattr(struct task_struct *p, char *name, char **value);
 int security_setprocattr(struct task_struct *p, char *name, void *value, size_t size);
 int security_netlink_send(struct sock *sk, struct sk_buff *skb);
-int security_netlink_recv(struct sk_buff *skb, int cap);
 int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen);
 int security_secctx_to_secid(const char *secdata, u32 seclen, u32 *secid);
 void security_release_secctx(char *secdata, u32 seclen);
@@ -1833,6 +1831,26 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
  */
 
 static inline int security_init(void)
+{
+	return 0;
+}
+
+static inline int security_binder_set_context_mgr(struct task_struct *mgr)
+{
+	return 0;
+}
+
+static inline int security_binder_transaction(struct task_struct *from, struct task_struct *to)
+{
+	return 0;
+}
+
+static inline int security_binder_transfer_binder(struct task_struct *from, struct task_struct *to)
+{
+	return 0;
+}
+
+static inline int security_binder_transfer_file(struct task_struct *from, struct task_struct *to, struct file *file)
 {
 	return 0;
 }
@@ -1865,32 +1883,15 @@ static inline int security_capset(struct cred *new,
 	return cap_capset(new, old, effective, inheritable, permitted);
 }
 
-static inline int security_capable(struct user_namespace *ns,
-				   const struct cred *cred, int cap)
+static inline int security_capable(const struct cred *cred,
+				   struct user_namespace *ns, int cap)
 {
-	return cap_capable(current, cred, ns, cap, SECURITY_CAP_AUDIT);
+	return cap_capable(cred, ns, cap, SECURITY_CAP_AUDIT);
 }
 
-static inline int security_real_capable(struct task_struct *tsk, struct user_namespace *ns, int cap)
-{
-	int ret;
-
-	rcu_read_lock();
-	ret = cap_capable(tsk, __task_cred(tsk), ns, cap, SECURITY_CAP_AUDIT);
-	rcu_read_unlock();
-	return ret;
-}
-
-static inline
-int security_real_capable_noaudit(struct task_struct *tsk, struct user_namespace *ns, int cap)
-{
-	int ret;
-
-	rcu_read_lock();
-	ret = cap_capable(tsk, __task_cred(tsk), ns, cap,
-			       SECURITY_CAP_NOAUDIT);
-	rcu_read_unlock();
-	return ret;
+static inline int security_capable_noaudit(const struct cred *cred,
+					   struct user_namespace *ns, int cap) {
+	return cap_capable(cred, ns, cap, SECURITY_CAP_NOAUDIT);
 }
 
 static inline int security_quotactl(int cmds, int type, int id,
@@ -2039,7 +2040,7 @@ static inline int security_inode_init_security(struct inode *inode,
 						void **value,
 						size_t *len)
 {
-       return -EOPNOTSUPP;
+	return -EOPNOTSUPP;
 }
 
 static inline int security_inode_create(struct inode *dir,
@@ -2379,7 +2380,7 @@ static inline int security_task_prctl(int option, unsigned long arg2,
 				      unsigned long arg4,
 				      unsigned long arg5)
 {
-	return cap_task_prctl(option, arg2, arg3, arg3, arg5);
+	return cap_task_prctl(option, arg2, arg3, arg4, arg5);
 }
 
 static inline void security_task_to_inode(struct task_struct *p, struct inode *inode)
@@ -2503,11 +2504,6 @@ static inline int security_setprocattr(struct task_struct *p, char *name, void *
 static inline int security_netlink_send(struct sock *sk, struct sk_buff *skb)
 {
 	return cap_netlink_send(sk, skb);
-}
-
-static inline int security_netlink_recv(struct sk_buff *skb, int cap)
-{
-	return cap_netlink_recv(skb, cap);
 }
 
 static inline int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)

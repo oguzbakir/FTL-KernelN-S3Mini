@@ -362,8 +362,9 @@ uint dhd_download_fw_on_driverload = TRUE;
 /* Definitions to provide path to the firmware and nvram
  * example nvram_path[MOD_PARAM_PATHLEN]="/projects/wlan/nvram.txt"
  */
-char firmware_path[MOD_PARAM_PATHLEN] = "/system/etc/wifi/bcmdhd_sta.bin";
-char nvram_path[MOD_PARAM_PATHLEN] = "/system/etc/wifi/nvram_net.txt";
+
+char firmware_path[MOD_PARAM_PATHLEN]="/system/etc/wifi/bcmdhd_sta.bin";
+char nvram_path[MOD_PARAM_PATHLEN]="/system/etc/wifi/nvram_net.txt";
 
 /* information string to keep firmware, chio, cheip version info visiable from log */
 char info_string[MOD_PARAM_INFOLEN];
@@ -517,8 +518,20 @@ module_param(dhd_pktgen_len, uint, 0);
 #endif /* SDTEST */
 
 /* Version string to report */
-static char dhd_version[] = "Dongle Host Driver, version " EPI_VERSION_STR;
+#ifdef DHD_DEBUG
+#ifndef SRCBASE
+#define SRCBASE        "drivers/net/wireless/bcmdhd"
+#endif
+#define DHD_COMPILED "\nCompiled in " SRCBASE
+#else
+#define DHD_COMPILED
+#endif /* DHD_DEBUG */
 
+static char dhd_version[] = "Dongle Host Driver, version " EPI_VERSION_STR
+#ifdef DHD_DEBUG
+"\nCompiled in " SRCBASE " on " __DATE__ " at " __TIME__
+#endif
+;
 static void dhd_net_if_lock_local(dhd_info_t *dhd);
 static void dhd_net_if_unlock_local(dhd_info_t *dhd);
 static void dhd_suspend_lock(dhd_pub_t *dhdp);
@@ -3951,6 +3964,7 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 	dhd->pktfilter[3] = NULL;
 	/* Add filter to pass multicastDNS packet and NOT filter out as Broadcast */
 	dhd->pktfilter[4] = "104 0 0 0 0xFFFFFFFFFFFF 0x01005E0000FB";
+	dhd->pktfilter[4] = NULL;
 
 #ifdef CUSTOMER_HW4
 #ifdef GAN_LITE_NAT_KEEPALIVE_FILTER

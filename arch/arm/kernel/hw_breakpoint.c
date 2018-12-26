@@ -796,7 +796,7 @@ unlock:
 
 /*
  * Called from either the Data Abort Handler [watchpoint] or the
- * Prefetch Abort Handler [breakpoint] with preemption disabled.
+ * Prefetch Abort Handler [breakpoint] with interrupts disabled.
  */
 static int hw_breakpoint_pending(unsigned long addr, unsigned int fsr,
 				 struct pt_regs *regs)
@@ -804,8 +804,10 @@ static int hw_breakpoint_pending(unsigned long addr, unsigned int fsr,
 	int ret = 0;
 	u32 dscr;
 
-	/* We must be called with preemption disabled. */
-	WARN_ON(preemptible());
+	preempt_disable();
+
+	if (interrupts_enabled(regs))
+		local_irq_enable();
 
 	/* We only handle watchpoints and hardware breakpoints. */
 	ARM_DBG_READ(c1, 0, dscr);
@@ -824,10 +826,6 @@ static int hw_breakpoint_pending(unsigned long addr, unsigned int fsr,
 		ret = 1; /* Unhandled fault. */
 	}
 
-	/*
-	 * Re-enable preemption after it was disabled in the
-	 * low-level exception handling code.
-	 */
 	preempt_enable();
 
 	return ret;
@@ -978,10 +976,10 @@ static int __init arch_hw_breakpoint_init(void)
 	}
 
 	/* Register debug fault handler. */
-	hook_fault_code(2, hw_breakpoint_pending, SIGTRAP, TRAP_HWBKPT,
-			"watchpoint debug exception");
-	hook_ifault_code(2, hw_breakpoint_pending, SIGTRAP, TRAP_HWBKPT,
-			"breakpoint debug exception");
+	hook_fault_code(FAULT_CODE_DEBUG, hw_breakpoint_pending, SIGTRAP,
+			TRAP_HWBKPT, "watchpoint debug exception");
+	hook_ifault_code(FAULT_CODE_DEBUG, hw_breakpoint_pending, SIGTRAP,
+			TRAP_HWBKPT, "breakpoint debug exception");
 
 	/* Register hotplug notifier. */
 	register_cpu_notifier(&dbg_reset_nb);

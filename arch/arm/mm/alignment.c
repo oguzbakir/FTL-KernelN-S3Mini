@@ -726,6 +726,9 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 	int isize = 4;
 	int thumb2_32b = 0;
 
+	if (interrupts_enabled(regs))
+		local_irq_enable();
+
 	instrptr = instruction_pointer(regs);
 
 	if (thumb_mode(regs)) {
@@ -936,7 +939,7 @@ static int __init alignment_init(void)
 		ai_usermode = UM_FIXUP;
 	}
 
-	hook_fault_code(1, do_alignment, SIGBUS, BUS_ADRALN,
+	hook_fault_code(FAULT_CODE_ALIGNMENT, do_alignment, SIGBUS, BUS_ADRALN,
 			"alignment exception");
 
 	/*

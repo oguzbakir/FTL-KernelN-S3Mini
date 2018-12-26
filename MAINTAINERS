@@ -2728,17 +2728,6 @@ F:	Documentation/filesystems/caching/
 F:	fs/fscache/
 F:	include/linux/fscache*.h
 
-F2FS FILE SYSTEM
-M:	Jaegeuk Kim <jaegeuk.kim@samsung.com>
-L:	linux-f2fs-devel@lists.sourceforge.net
-W:	http://en.wikipedia.org/wiki/F2FS
-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs.git
-S:	Maintained
-F:	Documentation/filesystems/f2fs.txt
-F:	Documentation/ABI/testing/sysfs-fs-f2fs
-F:	fs/f2fs/
-F:	include/linux/f2fs_fs.h
-
 FUJITSU FR-V (FRV) PORT
 M:	David Howells <dhowells@redhat.com>
 S:	Maintained
@@ -6933,6 +6922,12 @@ M:	Miroslav Zagorac <zaga@fly.cc.fer.hr>
 L:	linux-scsi@vger.kernel.org
 S:	Maintained
 F:	drivers/scsi/wd7000.c
+
+WIIMOTE HID DRIVER
+M:	David Herrmann <dh.herrmann@googlemail.com>
+L:	linux-input@vger.kernel.org
+S:	Maintained
+F:	drivers/hid/hid-wiimote*
 
 WINBOND CIR DRIVER
 M:	David Härdeman <david@hardeman.nu>

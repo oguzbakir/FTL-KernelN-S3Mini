@@ -1123,9 +1123,9 @@ static int musb_gadget_enable(struct usb_ep *ep,
 		/* Set TXMAXP with the FIFO size of the endpoint
 		 * to disable double buffering mode.
 		 */
-		if (musb->double_buffer_not_ok)
+		/*if (musb->double_buffer_not_ok)
 			musb_writew(regs, MUSB_TXMAXP, hw_ep->max_packet_sz_tx);
-		else
+		else*/
 			musb_writew(regs, MUSB_TXMAXP, musb_ep->packet_sz
 					| (musb_ep->hb_mult << 11));
 
@@ -1163,9 +1163,9 @@ static int musb_gadget_enable(struct usb_ep *ep,
 		/* Set RXMAXP with the FIFO size of the endpoint
 		 * to disable double buffering mode.
 		 */
-		if (musb->double_buffer_not_ok)
+		/*if (musb->double_buffer_not_ok)
 			musb_writew(regs, MUSB_RXMAXP, hw_ep->max_packet_sz_tx);
-		else
+		else*/
 			musb_writew(regs, MUSB_RXMAXP, musb_ep->packet_sz
 					| (musb_ep->hb_mult << 11));
 

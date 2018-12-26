@@ -72,6 +72,7 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
 		__this_cpu_dec(process_counts);
 	}
 	list_del_rcu(&p->thread_group);
+	list_del_rcu(&p->thread_node);
 }
 
 /*
@@ -695,19 +696,17 @@ static void exit_mm(struct task_struct * tsk)
 	enter_lazy_tlb(mm, current);
 	/* We don't want this task to be frozen prematurely */
 	clear_freeze_flag(tsk);
-	if (tsk->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
-		atomic_dec(&mm->oom_disable_count);
 	task_unlock(tsk);
 	mm_update_next_owner(mm);
 	mmput(mm);
 }
 
 /*
- * When we die, we re-parent all our children.
- * Try to give them to another thread in our thread
- * group, and if no such member exists, give it to
- * the child reaper process (ie "init") in our pid
- * space.
+ * When we die, we re-parent all our children, and try to:
+ * 1. give them to another thread in our thread group, if such a member exists
+ * 2. give it to the first ancestor process which prctl'd itself as a
+ *    child_subreaper for its children (like a service manager)
+ * 3. give it to the init process (PID 1) in our pid namespace
  */
 static struct task_struct *find_new_reaper(struct task_struct *father)
 	__releases(&tasklist_lock)
@@ -738,6 +737,29 @@ static struct task_struct *find_new_reaper(struct task_struct *father)
 		 * forget_original_parent() must move them somewhere.
 		 */
 		pid_ns->child_reaper = init_pid_ns.child_reaper;
+	} else if (father->signal->has_child_subreaper) {
+		struct task_struct *reaper;
+
+		/*
+		 * Find the first ancestor marked as child_subreaper.
+		 * Note that the code below checks same_thread_group(reaper,
+		 * pid_ns->child_reaper).  This is what we need to DTRT in a
+		 * PID namespace. However we still need the check above, see
+		 * http://marc.info/?l=linux-kernel&m=131385460420380
+		 */
+		for (reaper = father->real_parent;
+		     reaper != &init_task;
+		     reaper = reaper->real_parent) {
+			if (same_thread_group(reaper, pid_ns->child_reaper))
+				break;
+			if (!reaper->signal->is_child_subreaper)
+				continue;
+			thread = reaper;
+			do {
+				if (!(thread->flags & PF_EXITING))
+					return reaper;
+			} while_each_thread(reaper, thread);
+		}
 	}
 
 	return pid_ns->child_reaper;
@@ -764,7 +786,7 @@ static void reparent_leader(struct task_struct *father, struct task_struct *p,
 	p->exit_signal = SIGCHLD;
 
 	/* If it has exited notify the new parent about this child's death. */
-	if (!task_ptrace(p) &&
+	if (!p->ptrace &&
 	    p->exit_state == EXIT_ZOMBIE && thread_group_empty(p)) {
 		do_notify_parent(p, p->exit_signal);
 		if (task_detached(p)) {
@@ -794,7 +816,7 @@ static void forget_original_parent(struct task_struct *father)
 		do {
 			t->real_parent = reaper;
 			if (t->parent == father) {
-				BUG_ON(task_ptrace(t));
+				BUG_ON(t->ptrace);
 				t->parent = t->real_parent;
 			}
 			if (t->pdeath_signal)
@@ -1007,8 +1029,6 @@ NORET_TYPE void do_exit(long code)
 
 	if (group_dead)
 		disassociate_ctty(1);
-
-	module_put(task_thread_info(tsk)->exec_domain->module);
 
 	proc_exit_connector(tsk);
 
@@ -1383,7 +1403,8 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
 static int *task_stopped_code(struct task_struct *p, bool ptrace)
 {
 	if (ptrace) {
-		if (task_is_stopped_or_traced(p))
+		if (task_is_stopped_or_traced(p) &&
+		    !(p->jobctl & JOBCTL_LISTENING))
 			return &p->exit_code;
 	} else {
 		if (p->signal->flags & SIGNAL_STOP_STOPPED)
@@ -1586,7 +1607,7 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
 		 * Notification and reaping will be cascaded to the real
 		 * parent when the ptracer detaches.
 		 */
-		if (likely(!ptrace) && unlikely(task_ptrace(p))) {
+		if (likely(!ptrace) && unlikely(p->ptrace)) {
 			/* it will become visible, clear notask_error */
 			wo->notask_error = 0;
 			return 0;
@@ -1629,7 +1650,7 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
 		 * own children, it should create a separate process which
 		 * takes the role of real parent.
 		 */
-		if (likely(!ptrace) && task_ptrace(p) &&
+		if (likely(!ptrace) && p->ptrace &&
 		    same_thread_group(p->parent, p->real_parent))
 			return 0;
 

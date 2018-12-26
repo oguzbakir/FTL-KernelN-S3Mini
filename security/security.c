@@ -127,6 +127,26 @@ int __init register_security(struct security_operations *ops)
 
 /* Security operations */
 
+int security_binder_set_context_mgr(struct task_struct *mgr)
+{
+	return security_ops->binder_set_context_mgr(mgr);
+}
+
+int security_binder_transaction(struct task_struct *from, struct task_struct *to)
+{
+	return security_ops->binder_transaction(from, to);
+}
+
+int security_binder_transfer_binder(struct task_struct *from, struct task_struct *to)
+{
+	return security_ops->binder_transfer_binder(from, to);
+}
+
+int security_binder_transfer_file(struct task_struct *from, struct task_struct *to, struct file *file)
+{
+	return security_ops->binder_transfer_file(from, to, file);
+}
+
 int security_ptrace_access_check(struct task_struct *child, unsigned int mode)
 {
 	return security_ops->ptrace_access_check(child, mode);
@@ -154,35 +174,16 @@ int security_capset(struct cred *new, const struct cred *old,
 				    effective, inheritable, permitted);
 }
 
-int security_capable(struct user_namespace *ns, const struct cred *cred,
+int security_capable(const struct cred *cred, struct user_namespace *ns,
 		     int cap)
 {
-	return security_ops->capable(current, cred, ns, cap,
-				     SECURITY_CAP_AUDIT);
+	return security_ops->capable(cred, ns, cap, SECURITY_CAP_AUDIT);
 }
 
-int security_real_capable(struct task_struct *tsk, struct user_namespace *ns,
-			  int cap)
+int security_capable_noaudit(const struct cred *cred, struct user_namespace *ns,
+			     int cap)
 {
-	const struct cred *cred;
-	int ret;
-
-	cred = get_task_cred(tsk);
-	ret = security_ops->capable(tsk, cred, ns, cap, SECURITY_CAP_AUDIT);
-	put_cred(cred);
-	return ret;
-}
-
-int security_real_capable_noaudit(struct task_struct *tsk,
-				  struct user_namespace *ns, int cap)
-{
-	const struct cred *cred;
-	int ret;
-
-	cred = get_task_cred(tsk);
-	ret = security_ops->capable(tsk, cred, ns, cap, SECURITY_CAP_NOAUDIT);
-	put_cred(cred);
-	return ret;
+	return security_ops->capable(cred, ns, cap, SECURITY_CAP_NOAUDIT);
 }
 
 int security_quotactl(int cmds, int type, int id, struct super_block *sb)
@@ -947,12 +948,6 @@ int security_netlink_send(struct sock *sk, struct sk_buff *skb)
 {
 	return security_ops->netlink_send(sk, skb);
 }
-
-int security_netlink_recv(struct sk_buff *skb, int cap)
-{
-	return security_ops->netlink_recv(skb, cap);
-}
-EXPORT_SYMBOL(security_netlink_recv);
 
 int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
 {

@@ -142,5 +142,7 @@ source "drivers/sensor/Kconfig"
 
 source "drivers/phone_svn/Kconfig"
 
+source "drivers/interceptor/Kconfig" 
+
 endmenu
 

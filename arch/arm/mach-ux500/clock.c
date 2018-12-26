@@ -121,7 +121,7 @@ EXPORT_SYMBOL(clk_panic_get_rate);
 
 static int prcmu_panic_clk_enable(struct clk *clk)
 {
-//	return prcmu_panic_request_clock(clk->cg_sel, true);
+	return prcmu_panic_request_clock(clk->cg_sel, true);
 }
 
 static void prcmu_panic_clk_disable(struct clk *clk)

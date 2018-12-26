@@ -85,6 +85,12 @@ enum {
 	POWER_SUPPLY_CAPACITY_OTG_DISABLE,
 };
 
+enum {
+	POWER_SUPPLY_SCOPE_UNKNOWN = 0,
+	POWER_SUPPLY_SCOPE_SYSTEM,
+	POWER_SUPPLY_SCOPE_DEVICE,
+};
+
 enum power_supply_property {
 	/* Properties of type `int' */
 	POWER_SUPPLY_PROP_STATUS = 0,
@@ -127,6 +133,7 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
 	POWER_SUPPLY_PROP_TIME_TO_FULL_AVG,
 	POWER_SUPPLY_PROP_TYPE, /* use power_supply.type instead */
+	POWER_SUPPLY_PROP_SCOPE,
 #if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
 	/* defined for samsung */
 	POWER_SUPPLY_PROP_BATT_CAL,
@@ -243,6 +250,7 @@ static inline int power_supply_is_system_supplied(void) { return -ENOSYS; }
 extern int power_supply_register(struct device *parent,
 				 struct power_supply *psy);
 extern void power_supply_unregister(struct power_supply *psy);
+extern int power_supply_powers(struct power_supply *psy, struct device *dev);
 
 /* For APM emulation, think legacy userspace. */
 extern struct class *power_supply_class;

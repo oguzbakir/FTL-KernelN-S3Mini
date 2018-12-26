@@ -573,9 +573,6 @@ asmlinkage void __init start_kernel(void)
 	early_boot_irqs_disabled = false;
 	local_irq_enable();
 
-	/* Interrupts are enabled now so all GFP allocations are safe. */
-	gfp_allowed_mask = __GFP_BITS_MASK;
-
 	kmem_cache_init_late();
 
 #ifdef CONFIG_PASR
@@ -655,7 +652,7 @@ asmlinkage void __init start_kernel(void)
 			printk(KERN_NOTICE "[LOG][ERROR] %s() log_buf_base = 0x%p\n", __FUNCTION__, log_buf_base);
 		else {
 			printk(KERN_NOTICE "[LOG] %s() log_buf_base = 0x%p, size=%ld\n", __FUNCTION__, 
-				(long unsigned int)log_buf_base, bank->size);
+				log_buf_base, bank->size);
 
 			/* irq log buffer initialize */
 			if (LOG_IRQ_BUF_SIZE < (log_buf_irq_entry_size*(log_buf_irq_entry_count+2))) {
@@ -853,6 +850,10 @@ static int __init kernel_init(void * unused)
 	 * Wait until kthreadd is all set-up.
 	 */
 	wait_for_completion(&kthreadd_done);
+
+	/* Now the scheduler is fully set up and can do blocking allocations */
+	gfp_allowed_mask = __GFP_BITS_MASK;
+
 	/*
 	 * init can allocate pages on any node
 	 */

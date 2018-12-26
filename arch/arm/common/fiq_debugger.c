@@ -24,6 +24,7 @@
 #include <linux/platform_device.h>
 #include <linux/kernel_debugger.h>
 #include <linux/kernel_stat.h>
+#include <linux/kmsg_dump.h>
 #include <linux/irq.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
@@ -190,29 +191,19 @@ static void debug_prompt(struct fiq_debugger_state *state)
 	debug_puts(state, "debug> ");
 }
 
-int log_buf_copy(char *dest, int idx, int len);
 static void dump_kernel_log(struct fiq_debugger_state *state)
 {
-	char buf[1024];
-	int idx = 0;
-	int ret;
-	int saved_oip;
+	char buf[512];
+	size_t len;
+	struct kmsg_dumper dumper = { .active = true };
 
-	/* setting oops_in_progress prevents log_buf_copy()
-	 * from trying to take a spinlock which will make it
-	 * very unhappy in some cases...
-	 */
-	saved_oip = oops_in_progress;
-	oops_in_progress = 1;
-	for (;;) {
-		ret = log_buf_copy(buf, idx, 1023);
-		if (ret <= 0)
-			break;
-		buf[ret] = 0;
+
+	kmsg_dump_rewind_nolock(&dumper);
+	while (kmsg_dump_get_line_nolock(&dumper, true, buf,
+					 sizeof(buf) - 1, &len)) {
+		buf[len] = 0;
 		debug_puts(state, buf);
-		idx += ret;
 	}
-	oops_in_progress = saved_oip;
 }
 
 static char *mode_name(unsigned cpsr)

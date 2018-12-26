@@ -115,6 +115,9 @@ static int suspend_test_fail_count;
 
 void ux500_suspend_dbg_test_set_wakeup(void)
 {
+	//test
+	return;
+
 	if (suspend_test_count == 0)
 		return;
 
